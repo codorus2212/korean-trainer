@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Bilingual Trainer – Natural Korean Edition</title>
+<style>
+  body{font-family:Arial,sans-serif;text-align:center;margin:25px;font-size:19.2px;}
+  input{margin:4px;padding:6px;font-size:16.8px;}
+  button{margin:6px;padding:7px 14px;cursor:pointer;font-size:16.8px;}
+  button:disabled{cursor:not-allowed;}
+  table{margin:0 auto;border-collapse:collapse;}
+  th,td{padding:7px;font-size:16.8px;}
+  .quiz,.sentences,.editor{display:none;margin-top:20px;}
+  .wordBox{margin-bottom:18px;font-size:19.2px;}
+  #savedNotice{font-size:16.8px;color:green;margin-top:10px;}
+  .confirmation{
+    font-size:16.8px;
+    color:white;
+    background:#4CAF50;
+    padding:10px 20px;
+    border-radius:5px;
+    margin-top:10px;
+    display:inline-block;
+    animation:fadeOut 3s forwards;
+  }
+  @keyframes fadeOut{
+    0%{opacity:1;}
+    70%{opacity:1;}
+    100%{opacity:0;display:none;}
+  }
+  .hint{font-size:16.8px;color:#666;margin:10px 0;}
+  .korean-text{font-size:21.6px;color:#0066cc;}
+  button:hover:not(:disabled){background:#f0f0f0;}
+  .score{font-size:21.6px;color:#0066cc;margin:15px 0;font-weight:bold;}
+  .progress{font-size:16.8px;color:#666;margin:10px 0;}
+  .tooltip{
+    position:relative;
+    cursor:pointer;
+    border-bottom:1px dotted #0066cc;
+    color:#0066cc;
+    transition:all 0.2s;
+  }
+  .tooltip:hover{
+    color:#004499;
+    border-bottom-color:#004499;
+  }
+  .tooltip:active{
+    transform:scale(0.98);
+  }
+  .tooltip:hover::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%);
+    background:#333;
+    color:white;
+    padding:6px 10px;
+    border-radius:4px;
+    white-space:nowrap;
+    font-size:0.9em;
+    z-index:1000;
+    margin-bottom:5px;
+  }
+  .tooltip:hover::before{
+    content:'';
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%);
+    border:5px solid transparent;
+    border-top-color:#333;
+    margin-bottom:-5px;
+  }
+  .speed-controls{margin:15px 0;padding:10px;background:#f5f5f5;border-radius:5px;}
+  .speed-btn{margin:0 5px;padding:8px 16px;border:2px solid #ccc;background:white;border-radius:4px;font-size:15px;}
+  .speed-btn.active{background:#0066cc;color:white;border-color:#0066cc;font-weight:bold;}
+  .speed-btn:hover{background:#e6f2ff;}
+</style>
+</head>
+<body>
+<h2 style="font-size:28.8px;">Korean ↔ English Trainer – Everyday Polite</h2>
+
+<div id="inputSection">
+  <p>Type up to 3 new word pairs, or use Random Review to practice saved words.</p>
+  <p class="hint">💡 Start typing to see suggestions from the starter Korean-English vocabulary</p>
+  <table>
+    <tr><th>English</th><th>Korean</th></tr>
+    <tr>
+      <td><input id="en1" list="enSuggestions" oninput="debouncedAutoFillKorean(1)" placeholder="English (to go)"></td>
+      <td><input id="ko1" list="koSuggestions" oninput="debouncedAutoFillEnglish(1)" class="korean-text" placeholder="Korean (가다)"></td>
+    </tr>
+    <tr>
+      <td><input id="en2" list="enSuggestions" oninput="debouncedAutoFillKorean(2)" placeholder="English (to eat)"></td>
+      <td><input id="ko2" list="koSuggestions" oninput="debouncedAutoFillEnglish(2)" class="korean-text" placeholder="Korean (먹다)"></td>
+    </tr>
+    <tr>
+      <td><input id="en3" list="enSuggestions" oninput="debouncedAutoFillKorean(3)" placeholder="English (to see)"></td>
+      <td><input id="ko3" list="koSuggestions" oninput="debouncedAutoFillEnglish(3)" class="korean-text" placeholder="Korean (보다)"></td>
+    </tr>
+  </table>
+  
+  <!-- Datalists for autocomplete -->
+  <datalist id="enSuggestions"></datalist>
+  <datalist id="koSuggestions"></datalist>
+  
+  <div style="margin:15px 0;">
+    <label><input type="radio" name="mode" value="enko" checked> English → Korean</label>
+    <label><input type="radio" name="mode" value="koen"> Korean → English</label>
+  </div>
+  
+  <button onclick="startQuiz()">Start Quiz (New Words)</button>
+  <button id="randomBtn" onclick="startRandom()">🌱 Random Review</button><br>
+  <button onclick="showEditor()">📖 View/Edit My Words</button>
+  <button onclick="exportWords()">💾 Export Words</button>
+  <button onclick="document.getElementById('importFile').click()">📥 Import Words</button>
+  <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importWords(event)">
+  <button onclick="clearSaved()">🗑 Clear All Words</button>
+  <div id="savedNotice"></div>
+  <p id="randomDisabledMsg" class="hint" style="display:none;color:#888;font-size:14.4px;">Add at least 1 word pair to unlock Random Review.</p>
+</div>
+
+<div class="quiz" id="quizSection">
+  <h3 style="font-size:24px;">Match the meanings</h3>
+  <div class="progress" id="quizProgress">Answered: 0/0</div>
+  <div id="quizContent"></div>
+  <button id="nextBtn" onclick="showSentences()" disabled>Next: Use in Sentences</button>
+  <div class="score" id="scoreDisplay"></div>
+</div>
+
+<div class="sentences" id="sentenceSection">
+  <h3 style="font-size:24px;">Simple Sentences (Everyday Polite)</h3>
+  <div id="sentences"></div>
+  <button onclick="restart()">Start Over</button>
+</div>
+
+<div class="editor" id="editorSection">
+  <h3 style="font-size:24px;">My Saved Words</h3>
+  <p class="hint">Total saved words: <span id="wordCount">0</span></p>
+  <p class="hint" style="font-size:14.4px;color:#888;">Saved words are used for Random Review and tracking your progress.</p>
+  <div style="margin:15px 0;">
+    <button onclick="exportWords()">💾 Export Words</button>
+    <button onclick="document.getElementById('importFile').click()">📥 Import Words</button>
+  </div>
+  <table id="editTable" border="1" style="margin:20px auto;">
+    <tr><th>English</th><th>Korean</th><th>Actions</th></tr>
+  </table>
+  <button onclick="returnToMain()">← Back</button>
+</div>
+
+<script>
+// --- Built-in mini dictionary for auto-fill (Pack A: Everyday actions) ---
+const miniDict = {
+  "eat": "먹다",
+  "drink": "마시다",
+  "go": "가다",
+  "come": "오다",
+  "see": "보다",
+  "watch": "보다",
+  "read": "읽다",
+  "write": "쓰다",
+  "play": "놀다",
+  "study": "공부하다",
+  "work": "일하다",
+  "sleep": "자다",
+  "wake up": "일어나다",
+  "sit": "앉다",
+  "stand": "서다",
+  "talk": "말하다",
+  "speak": "말하다",
+  "listen": "듣다",
+  "walk": "걷다",
+  "run": "달리다"
+};
+
+// Create reverse lookup (Korean to English)
+const miniDictReverse = {};
+Object.entries(miniDict).forEach(([en, ko]) => {
+  if (!miniDictReverse[ko]) miniDictReverse[ko] = [];
+  miniDictReverse[ko].push(en);
+});
+
+// Better sentence patterns for VERBS (verb stem form for Korean)
+const verbSentences = {
+  "먹다": {en: "I want to eat now.", ko: "지금 먹고 싶어요."},
+  "마시다": {en: "Let's drink some water.", ko: "물 좀 마셔요."},
+  "가다": {en: "Where do you want to go?", ko: "어디 가고 싶어요?"},
+  "오다": {en: "Please come here.", ko: "여기 오세요."},
+  "보다": {en: "I want to see that.", ko: "그거 보고 싶어요."},
+  "읽다": {en: "Can you read this?", ko: "이거를 읽을 수 있어요?"},
+  "쓰다": {en: "I need to write a letter.", ko: "편지 써야 해요."},
+  "놀다": {en: "Let's play together.", ko: "같이 놀아요."},
+  "공부하다": {en: "I want to study.", ko: "공부하고 싶어요."},
+  "일하다": {en: "I'm working now.", ko: "지금 일해요."},
+  "자다": {en: "I want to sleep.", ko: "자고 싶어요."},
+  "일어나다": {en: "What time do you wake up?", ko: "몇 시에 일어나요?"},
+  "앉다": {en: "Please sit down.", ko: "앉으세요."},
+  "서다": {en: "Please stand up.", ko: "서세요."},
+  "말하다": {en: "Can you speak Korean?", ko: "한국어 할 수 있어요?"},
+  "듣다": {en: "I'm listening.", ko: "듣고 있어요."},
+  "걷다": {en: "Let's walk together.", ko: "같이 걸어요."},
+  "달리다": {en: "I want to run.", ko: "달리고 싶어요."}
+};
+
+// Word-by-word translation dictionary for hover tooltips
+// COMPREHENSIVE - Every word in all 18 sentences covered
+const wordDict = {
+  // ===== KOREAN TO ENGLISH =====
+  
+  // Core vocabulary - EVERY noun and standalone word
+  "지금": "now / right now",
+  "오늘": "today",
+  "물": "water",
+  "여기": "here",
+  "그거": "that (thing)",
+  "이거": "this (thing)",
+  "이": "this (determiner)",
+  "편지": "letter",
+  "같이": "together",
+  "어디": "where",
+  "몇": "what / how many",
+  "시에": "at (time) o'clock",
+  "한국어": "Korean language",
+  "달리기": "running / to run (noun form)",
+  "좀": "a little / some / please",
+  "수": "ability / possibility (can)",
+  
+  // Base verb forms (dictionary form) - for when users enter custom words
+  "먹다": "to eat (dictionary form)",
+  "마시다": "to drink (dictionary form)",
+  "가다": "to go (dictionary form)",
+  "오다": "to come (dictionary form)",
+  "보다": "to see / to watch (dictionary form)",
+  "읽다": "to read (dictionary form)",
+  "쓰다": "to write (dictionary form)",
+  "놀다": "to play (dictionary form)",
+  "공부하다": "to study (dictionary form)",
+  "일하다": "to work (dictionary form)",
+  "자다": "to sleep (dictionary form)",
+  "일어나다": "to wake up (dictionary form)",
+  "앉다": "to sit (dictionary form)",
+  "서다": "to stand (dictionary form)",
+  "말하다": "to talk / to speak (dictionary form)",
+  "듣다": "to listen (dictionary form)",
+  "걷다": "to walk (dictionary form)",
+  "달리다": "to run (dictionary form)",
+  
+  // Words from generic sentence patterns
+  "만들어요": "make + 요 (polite)",
+  "필요해요": "need + 요 (polite)",
+  "찾을": "find + 을 (can/future)",
+  "수업에서": "in class (수업 = class, 에서 = in/at)",
+  "사용해요": "use + 요 (polite)",
+  
+  // Verb stems + grammar particles - KEY FOR UNDERSTANDING KOREAN!
+  // Every conjugated verb form that appears in our sentences
+  "먹고": "eat + 고 (and/then)",
+  "마셔요": "drink + 요 (polite)",
+  "가고": "go + 고 (and/then)",
+  "오세요": "come + 세요 (polite command)",
+  "보고": "see + 고 (and/then)",
+  "읽을": "read + 을 (future/ability form)",
+  "써야": "write + 야 (must)",
+  "놀아요": "play + 요 (polite)",
+  "공부해야": "study + 해야 (must do)",
+  "일해요": "work + 요 (polite)",
+  "자고": "sleep + 고 (and/then)",
+  "일어나요": "wake up + 요 (polite)",
+  "앉으세요": "sit + 으세요 (polite command)",
+  "서세요": "stand + 세요 (polite command)",
+  "할": "do/speak + ㄹ (can form)",
+  "듣고": "listen + 고 (and/then)",
+  "걸어요": "walk + 요 (polite)",
+  
+  // Grammar endings & particles - THE GLUE OF KOREAN
+  "싶어요": "want to (verb-고 싶어요 = want to verb)",
+  "있어요": "exist / have / can / is/am/are",
+  "해요": "do + 요 (polite ending)",
+  "좋아해요": "like + 요 (polite)",
+  
+  // ===== ENGLISH TO KOREAN =====
+  
+  // Pronouns & basic words
+  "I": "저 (formal) / 나 (casual)",
+  "I'm": "나는 / 저는 (I + topic marker)",
+  "Im": "나는 / 저는 (I + topic marker)",
+  "We": "우리 (we)",
+  "We're": "우리는 (we + topic marker)",
+  "Were": "우리는 (we + topic marker)",
+  "you": "너 (casual) / 당신 (formal)",
+  "a": "(no article in Korean)",
+  "to": "~에 / ~로 (direction/purpose)",
+  "in": "~에 / ~에서 (in/at)",
+  
+  // Common verbs (dictionary form)
+  "want": "원하다 / 싶다 (want)",
+  "eat": "먹다",
+  "drink": "마시다",
+  "go": "가다",
+  "come": "오다",
+  "see": "보다",
+  "read": "읽다",
+  "write": "쓰다",
+  "play": "놀다",
+  "study": "공부하다",
+  "work": "일하다",
+  "sleep": "자다",
+  "wake": "일어나다",
+  "sit": "앉다",
+  "stand": "서다",
+  "speak": "말하다",
+  "listen": "듣다",
+  "walk": "걷다",
+  "run": "달리다",
+  "like": "좋아하다",
+  
+  // Question words
+  "Where": "어디",
+  "What": "무엇 / 뭐",
+  "Can": "~할 수 있다 (can/able to)",
+  
+  // Common verbs (dictionary form)
+  "want": "원하다 / 싶다 (want)",
+  "eat": "먹다",
+  "drink": "마시다",
+  "go": "가다",
+  "come": "오다",
+  "see": "보다",
+  "read": "읽다",
+  "write": "쓰다",
+  "play": "놀다",
+  "study": "공부하다",
+  "work": "일하다",
+  "sleep": "자다",
+  "wake": "일어나다",
+  "sit": "앉다",
+  "stand": "서다",
+  "speak": "말하다",
+  "listen": "듣다",
+  "walk": "걷다",
+  "run": "달리다",
+  "like": "좋아하다",
+  "find": "찾다 (to find)",
+  "make": "만들다 (to make)",
+  "use": "사용하다 (to use)",
+  
+  // Articles & modifiers
+  "the": "(no article in Korean)",
+  "now": "지금",
+  "today": "오늘",
+  "here": "여기",
+  "that": "그거 (that thing)",
+  "this": "이거 (this thing)",
+  "some": "좀 / 어떤",
+  "together": "같이",
+  
+  // Nouns
+  "water": "물",
+  "letter": "편지",
+  "time": "시간 / 때",
+  "Korean": "한국어 (Korean language)",
+  "running": "달리기",
+  "class": "수업 (class/lesson)",
+  
+  // Politeness markers & commands
+  "Please": "제발 / ~세요 (polite request)",
+  "Let's": "~자 / ~요 (suggestion)",
+  "Lets": "~자 / ~요 (suggestion)",
+  
+  // Grammar constructions
+  "do": "하다",
+  "have": "있다 / 가지다",
+  "need": "필요하다 / ~해야 하다 (must)",
+  "working": "일하는 중 (progressive)",
+  "using": "사용하는 중 (progressive)",
+  "listening": "듣는 중 (progressive)",
+  
+  // Directional words
+  "up": "위 / 올라",
+  "down": "아래 / 내려"
+};
+
+// =======================================================
+let dict = {}, 
+    saved = {},
+    sentences = {},
+    quizAnswers = {},
+    totalQuestions = 0,
+    correctAnswers = 0,
+    speechRate = 0.7; // Default to medium-slow speed for learning
+
+// Debounce utility for smooth autocomplete
+function debounce(func, delay) {
+  let timeoutId;
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+// Load saved data
+function loadData() {
+  try {
+    const savedData = localStorage.getItem('koenJournal');
+    const sentenceData = localStorage.getItem('koenSentences');
+    if (savedData) saved = JSON.parse(savedData);
+    if (sentenceData) sentences = JSON.parse(sentenceData);
+  } catch(e) {
+    console.log("No saved data yet");
+  }
+}
+
+// Migrate old sentence data to fix grammar issues from previous versions
+function migrateLegacySentences() {
+  let updated = false;
+  
+  // Fix sentences that are missing "to" with main verbs
+  Object.keys(sentences).forEach(key => {
+    const sentence = sentences[key];
+    if (!sentence || !sentence.en) return;
+    
+    let newEn = sentence.en;
+    
+    // FIRST: Fix any double "to to" errors (from buggy migration)
+    newEn = newEn.replace(/\bto\s+to\b/gi, 'to');
+    
+    // Fix "I need [verb]" → "I need to [verb]" (but NOT if "to" already there)
+    // Uses negative lookahead (?!to ) to skip if "to" follows "need"
+    newEn = newEn.replace(/I need (?!to )([a-z]+)/gi, 'I need to $1');
+    
+    // Fix "I want [verb]" → "I want to [verb]"
+    newEn = newEn.replace(/I want (?!to )([a-z]+)/gi, 'I want to $1');
+    
+    // Fix "I like [verb]" → "I like to [verb]"
+    newEn = newEn.replace(/I like (?!to )([a-z]+)/gi, 'I like to $1');
+    
+    // If we made changes, update the sentence
+    if (newEn !== sentence.en) {
+      sentences[key].en = newEn;
+      updated = true;
+      console.log(`Migrated: "${sentence.en}" → "${newEn}"`);
+    }
+  });
+  
+  // Save updated sentences back to localStorage
+  if (updated) {
+    try {
+      localStorage.setItem('koenSentences', JSON.stringify(sentences));
+      console.log('✓ Sentence grammar migration completed');
+    } catch(e) {
+      console.error('Failed to save migrated sentences:', e);
+    }
+  }
+}
+
+// Populate datalists on page load
+window.onload = () => {
+  loadData();
+  migrateLegacySentences(); // Fix any old grammar issues from previous versions
+  updateRandomButtonState(); // Check if Random Review should be enabled
+  
+  if(Object.keys(saved).length) {
+    document.getElementById('savedNotice').textContent = `Saved words loaded ✓ (${Object.keys(saved).length} words)`;
+  }
+  
+  // Populate English suggestions
+  const enList = document.getElementById('enSuggestions');
+  Object.keys(miniDict).forEach(word => {
+    const option = document.createElement('option');
+    option.value = word;
+    enList.appendChild(option);
+  });
+  
+  // Populate Korean suggestions
+  const koList = document.getElementById('koSuggestions');
+  Object.values(miniDict).forEach(word => {
+    const option = document.createElement('option');
+    option.value = word;
+    koList.appendChild(option);
+  });
+  
+  // Add Enter key navigation
+  setupEnterKeyNavigation();
+};
+
+// Auto-fill functions
+function autoFillKorean(num) {
+  const enInput = document.getElementById(`en${num}`);
+  const koInput = document.getElementById(`ko${num}`);
+  const enValue = enInput.value.trim().toLowerCase();
+  
+  if (miniDict[enValue] && !koInput.value) {
+    koInput.value = miniDict[enValue];
+  }
+}
+
+function autoFillEnglish(num) {
+  const enInput = document.getElementById(`en${num}`);
+  const koInput = document.getElementById(`ko${num}`);
+  const koValue = koInput.value.trim();
+  
+  if (miniDictReverse[koValue] && !enInput.value) {
+    enInput.value = miniDictReverse[koValue][0];
+  }
+}
+
+// Create debounced versions for smoother typing experience
+const debouncedAutoFillKorean = debounce(autoFillKorean, 200);
+const debouncedAutoFillEnglish = debounce(autoFillEnglish, 200);
+
+// Update Random Review button state based on saved words
+function updateRandomButtonState() {
+  const randomBtn = document.getElementById('randomBtn');
+  const randomMsg = document.getElementById('randomDisabledMsg');
+  const hasSavedWords = Object.keys(saved).length > 0;
+  
+  randomBtn.disabled = !hasSavedWords;
+  randomMsg.style.display = hasSavedWords ? 'none' : 'block';
+}
+
+// Setup Enter key navigation between fields
+function setupEnterKeyNavigation() {
+  const fields = ['en1', 'ko1', 'en2', 'ko2', 'en3', 'ko3'];
+  fields.forEach((fieldId, index) => {
+    document.getElementById(fieldId).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (index < fields.length - 1) {
+          // Move to next field
+          document.getElementById(fields[index + 1]).focus();
+        } else {
+          // On last field, trigger Start Quiz
+          startQuiz();
+        }
+      }
+    });
+  });
+}
+
+// Show animated confirmation message
+function showConfirmation(message) {
+  const notice = document.getElementById('savedNotice');
+  // Replace newlines with <br> tags for HTML display
+  const htmlMessage = message.replace(/\n/g, '<br>');
+  notice.innerHTML = `<span class="confirmation">${htmlMessage}</span>`;
+  setTimeout(() => {
+    notice.innerHTML = `Saved words: ${Object.keys(saved).length}`;
+  }, 3000);
+}
+
+function speak(t, l) {
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = l;
+  u.rate = speechRate; // Use global speech rate setting
+  speechSynthesis.speak(u);
+}
+
+// Set speech rate and update button styles
+function setSpeechRate(rate) {
+  speechRate = rate;
+  // Update button styles
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+// Add hover tooltips to words for vocabulary building
+function addTooltips(sentence, isKorean) {
+  // Split on spaces AND punctuation while capturing them as separate tokens
+  const words = sentence.split(/(\s+|[.,!?;:'"()[\]{}])/);
+  const lang = isKorean ? 'ko-KR' : 'en-US';
+  
+  return words.map(word => {
+    // Remove ALL punctuation for lookup (more comprehensive)
+    const cleanWord = word.replace(/[.,!?;:'"()[\]{}]/g, '').trim();
+    
+    // Skip empty words
+    if (!cleanWord) return word;
+    
+    const translation = wordDict[cleanWord];
+    if (translation) {
+      // Make word clickable to speak it (escape quotes for onclick)
+      const escapedWord = cleanWord.replace(/'/g, "\\'");
+      return `<span class="tooltip" data-tooltip="${translation}" onclick="speak('${escapedWord}', '${lang}')">${word}</span>`;
+    }
+    // If no translation found, return word unchanged (no tooltip)
+    return word;
+  }).join('');
+}
+
+// Clear input fields
+function clearInputs() {
+  for(let i = 1; i <= 3; i++) {
+    document.getElementById(`en${i}`).value = '';
+    document.getElementById(`ko${i}`).value = '';
+  }
+}
+
+// Normalize Korean verbs to dictionary form (ending in 다)
+function normalizeVerb(korean, english) {
+  // Check if this looks like a verb based on English word
+  const isVerbInDict = miniDict[english.toLowerCase()] !== undefined;
+  
+  // If it ends in 다, it's already in dictionary form
+  if (korean.endsWith('다')) {
+    return { normalized: korean, wasNormalized: false };
+  }
+  
+  // If this is a known verb and doesn't end in 다, it might be conjugated
+  if (isVerbInDict) {
+    // Common polite endings: 어요, 아요, 해요, etc.
+    // Try to find the stem and add 다
+    let stem = korean;
+    
+    // Remove common polite endings
+    if (korean.endsWith('어요') || korean.endsWith('아요')) {
+      stem = korean.slice(0, -2); // Remove 어요/아요
+    } else if (korean.endsWith('해요')) {
+      stem = korean.slice(0, -2); // Remove 해요
+    } else if (korean.endsWith('세요')) {
+      stem = korean.slice(0, -2); // Remove 세요
+    } else if (korean.endsWith('고')) {
+      stem = korean.slice(0, -1); // Remove 고
+    }
+    
+    // If we found a stem, suggest dictionary form
+    if (stem !== korean) {
+      return { normalized: stem + '다', wasNormalized: true, original: korean };
+    }
+  }
+  
+  // Not a verb or already correct
+  return { normalized: korean, wasNormalized: false };
+}
+
+// ---- NEW WORD QUIZ ----
+function startQuiz() {
+  dict = {};
+  const ens = [en1.value.trim(), en2.value.trim(), en3.value.trim()].filter(Boolean);
+  const kos = [ko1.value.trim(), ko2.value.trim(), ko3.value.trim()].filter(Boolean);
+  
+  let newWordsCount = 0;
+  let duplicatesCount = 0;
+  let normalizedWords = [];
+  
+  for(let i = 0; i < ens.length; i++) {
+    if(ens[i] && kos[i]) {
+      // Normalize Korean verbs to dictionary form
+      const normResult = normalizeVerb(kos[i], ens[i]);
+      const normalizedKorean = normResult.normalized;
+      
+      // Track if normalization occurred
+      if (normResult.wasNormalized) {
+        normalizedWords.push({ original: normResult.original, normalized: normalizedKorean });
+        // Update the Korean array with normalized form
+        kos[i] = normalizedKorean;
+      }
+      
+      dict[ens[i]] = normalizedKorean;
+      
+      // Check if it's a new word or duplicate
+      if(saved[ens[i]]) {
+        duplicatesCount++;
+      } else {
+        newWordsCount++;
+      }
+      
+      saved[ens[i]] = normalizedKorean;
+      
+      // Use pre-made sentences if available, otherwise create generic ones
+      if(!sentences[ens[i]]) {
+        if(verbSentences[normalizedKorean]) {
+          sentences[ens[i]] = verbSentences[normalizedKorean];
+        } else {
+          sentences[ens[i]] = {
+            en: `I want to ${ens[i]}.`,
+            ko: `${normalizedKorean}고 싶어요.`
+          };
+        }
+      }
+    }
+  }
+  
+  if(Object.keys(dict).length === 0) {
+    alert("Please enter at least one word pair.");
+    return;
+  }
+  
+  localStorage.setItem('koenJournal', JSON.stringify(saved));
+  localStorage.setItem('koenSentences', JSON.stringify(sentences));
+  
+  // Show confirmation message
+  let confirmMsg = '';
+  if(duplicatesCount > 0 && newWordsCount === 0) {
+    confirmMsg = `Already saved. You can review with Random Review.`;
+  } else if(newWordsCount > 0) {
+    confirmMsg = `Saved ${newWordsCount} new word pair${newWordsCount > 1 ? 's' : ''}!`;
+  }
+  
+  // Add normalization notice if any verbs were normalized
+  if (normalizedWords.length > 0) {
+    const normalizedList = normalizedWords.map(w => `${w.original} → ${w.normalized}`).join(', ');
+    confirmMsg += `\n📝 Normalized to dictionary form: ${normalizedList}`;
+  }
+  
+  if (confirmMsg) {
+    showConfirmation(confirmMsg);
+  }
+  
+  updateRandomButtonState(); // Update button state after saving
+  clearInputs(); // Clear the input fields
+  document.getElementById("inputSection").style.display = "none";
+  buildQuiz();
+}
+
+// ---- RANDOM REVIEW ----
+function startRandom() {
+  if(Object.keys(saved).length === 0) {
+    alert("No saved words yet — please add some first!");
+    return;
+  }
+  
+  const entries = Object.entries(saved);
+  dict = {};
+  const sample = entries.sort(() => 0.5 - Math.random()).slice(0, 3);
+  for(const [en, ko] of sample) {
+    dict[en] = ko;
+  }
+  
+  clearInputs(); // Clear the input fields
+  document.getElementById("inputSection").style.display = "none";
+  buildQuiz();
+}
+
+// ---- BUILD QUIZ ----
+function buildQuiz() {
+  const quizDiv = document.getElementById("quizSection");
+  const content = document.getElementById("quizContent");
+  content.innerHTML = "";
+  
+  quizAnswers = {};
+  correctAnswers = 0;
+  totalQuestions = Object.keys(dict).length;
+  
+  updateProgress();
+  
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  
+  for(const [en, ko] of Object.entries(dict)) {
+    const qWord = mode === "enko" ? en : ko;
+    const correct = mode === "enko" ? ko : en;
+    
+    const allChoices = mode === "enko" ? Object.values(saved) : Object.keys(saved);
+    const opts = allChoices.filter(x => x !== correct).sort(() => 0.5 - Math.random()).slice(0, 2);
+    opts.push(correct);
+    const shuffled = opts.sort(() => 0.5 - Math.random());
+    
+    const div = document.createElement("div");
+    div.className = "wordBox";
+    div.id = `question-${en}`;
+    div.innerHTML = `<b style="font-size:1.2em;">${qWord}</b><br><br>` +
+      shuffled.map(o => `<button onclick="check('${o.replace(/'/g, "\\'")}','${correct.replace(/'/g, "\\'")}','${en.replace(/'/g, "\\'")}',this)">${o}</button>`).join(" ");
+    content.appendChild(div);
+  }
+  
+  document.getElementById('scoreDisplay').textContent = '';
+  quizDiv.style.display = "block";
+}
+
+function check(ans, correct, questionKey, btn) {
+  if(quizAnswers[questionKey]) return; // Already answered
+  
+  const isCorrect = ans === correct;
+  btn.style.background = isCorrect ? "lightgreen" : "pink";
+  
+  // Disable all buttons in this question
+  const questionDiv = document.getElementById(`question-${questionKey}`);
+  const buttons = questionDiv.getElementsByTagName('button');
+  for(let b of buttons) {
+    b.disabled = true;
+    if(b.textContent === correct) {
+      b.style.background = "lightgreen";
+    }
+  }
+  
+  quizAnswers[questionKey] = isCorrect;
+  if(isCorrect) correctAnswers++;
+  
+  updateProgress();
+  checkQuizComplete();
+}
+
+function updateProgress() {
+  const answered = Object.keys(quizAnswers).length;
+  document.getElementById('quizProgress').textContent = `Answered: ${answered}/${totalQuestions}`;
+}
+
+function checkQuizComplete() {
+  if(Object.keys(quizAnswers).length === totalQuestions) {
+    const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+    document.getElementById('scoreDisplay').textContent = 
+      `Score: ${correctAnswers}/${totalQuestions} (${percentage}%)`;
+    document.getElementById('nextBtn').disabled = false;
+  }
+}
+
+// ---- SHOW SENTENCES ----
+function showSentences() {
+  document.getElementById("quizSection").style.display = "none";
+  const sDiv = document.getElementById("sentenceSection");
+  const cont = document.getElementById("sentences");
+  cont.innerHTML = "";
+  
+  cont.innerHTML += `<p class="hint">💡 Hover over <span style="border-bottom:1px dotted #0066cc;color:#0066cc;cursor:help;">blue underlined words</span> to see their translation</p>`;
+  
+  cont.innerHTML += `<div class="speed-controls">
+    <span style="font-weight:bold;margin-right:10px;">🔊 Speech Speed:</span>
+    <button class="speed-btn" onclick="setSpeechRate(0.6)">🐢 Slow (0.6x)</button>
+    <button class="speed-btn active" onclick="setSpeechRate(0.7)">📖 Normal (0.7x)</button>
+    <button class="speed-btn" onclick="setSpeechRate(1.0)">⚡ Fast (1.0x)</button>
+  </div>`;
+  
+  for(const [en, ko] of Object.entries(dict)) {
+    const pair = sentences[en];
+    const eng = pair ? pair.en : `I want to ${en}.`;
+    const kor = pair ? pair.ko : `${ko}고 싶어요.`;
+    
+    // Add tooltips to both English and Korean sentences
+    const engWithTooltips = addTooltips(eng, false);
+    const korWithTooltips = addTooltips(kor, true);
+    
+    cont.innerHTML += `<div style="margin:20px auto; padding:18px; border:1px solid #ddd; max-width:600px;">
+      <p style="font-size:21.6px;">${engWithTooltips}</p>
+      <p style="font-size:26.4px; color:#0066cc;">${korWithTooltips}</p>
+      <button onclick="speak('${eng.replace(/'/g, "\\'")}','en-US')">🔊 English</button>
+      <button onclick="speak('${kor.replace(/'/g, "\\'")}','ko-KR')">🔊 Korean</button>
+      </div>`;
+  }
+  
+  sDiv.style.display = "block";
+}
+
+// ---- JOURNAL EDITOR ----
+function showEditor() {
+  document.getElementById("inputSection").style.display = "none";
+  const eDiv = document.getElementById("editorSection");
+  const table = document.getElementById("editTable");
+  const wordCount = document.getElementById("wordCount");
+  
+  table.innerHTML = "<tr><th>English</th><th>Korean</th><th>Actions</th></tr>";
+  
+  const entries = Object.entries(saved).sort((a, b) => a[0].localeCompare(b[0]));
+  
+  if(entries.length === 0) {
+    const r = table.insertRow();
+    r.innerHTML = `<td colspan="3" style="text-align:center;color:#666;padding:20px;">No saved words yet. Add some to get started!</td>`;
+  } else {
+    entries.forEach(([en, ko]) => {
+      const r = table.insertRow();
+      r.innerHTML = `<td><input value="${en}" onchange="editKey('${en.replace(/'/g, "\\'")}',this.value)"></td>
+                     <td><input value="${ko}" onchange="editValue('${en.replace(/'/g, "\\'")}',this.value)" class="korean-text"></td>
+                     <td><button onclick="deleteRow('${en.replace(/'/g, "\\'")}')" title="Delete this word">🗑</button></td>`;
+    });
+  }
+  
+  wordCount.textContent = entries.length;
+  eDiv.style.display = "block";
+}
+
+function editKey(oldKey, newKey) {
+  if(!newKey || newKey === oldKey) return;
+  const v = saved[oldKey];
+  const s = sentences[oldKey];
+  delete saved[oldKey];
+  delete sentences[oldKey];
+  saved[newKey] = v;
+  if(s) sentences[newKey] = s;
+  localStorage.setItem('koenJournal', JSON.stringify(saved));
+  localStorage.setItem('koenSentences', JSON.stringify(sentences));
+  showEditor();
+}
+
+function editValue(k, newVal) {
+  saved[k] = newVal;
+  localStorage.setItem('koenJournal', JSON.stringify(saved));
+}
+
+function deleteRow(k) {
+  if(!confirm(`Delete "${k}"?`)) return;
+  delete saved[k];
+  delete sentences[k];
+  localStorage.setItem('koenJournal', JSON.stringify(saved));
+  localStorage.setItem('koenSentences', JSON.stringify(sentences));
+  updateRandomButtonState(); // Update button state after deleting
+  showEditor();
+}
+
+function returnToMain() {
+  document.getElementById('editorSection').style.display = "none";
+  document.getElementById('inputSection').style.display = "block";
+  updateRandomButtonState(); // Update button state when returning to main
+  if(Object.keys(saved).length) {
+    document.getElementById('savedNotice').textContent = `Saved words loaded ✓ (${Object.keys(saved).length} words)`;
+  }
+}
+
+function restart() {
+  location.reload();
+}
+
+function clearSaved() {
+  if(!confirm("Clear ALL saved words? This cannot be undone!")) return;
+  localStorage.removeItem('koenJournal');
+  localStorage.removeItem('koenSentences');
+  saved = {};
+  sentences = {};
+  document.getElementById('savedNotice').textContent = "All words cleared.";
+  updateRandomButtonState(); // Update button state after clearing
+}
+
+// Export vocabulary to JSON file
+function exportWords() {
+  if(Object.keys(saved).length === 0) {
+    alert("No words to export yet!");
+    return;
+  }
+  
+  const data = {
+    vocabulary: saved,
+    sentences: sentences,
+    exportDate: new Date().toISOString(),
+    wordCount: Object.keys(saved).length
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `korean-vocabulary-${Object.keys(saved).length}-words.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  alert(`Exported ${Object.keys(saved).length} words! Share this file with your language partner.`);
+}
+
+// Import vocabulary from JSON file
+function importWords(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      if(!data.vocabulary) {
+        alert("Invalid vocabulary file!");
+        return;
+      }
+      
+      // Calculate overlap to warn users about potential overwrites
+      let overlapCount = 0;
+      Object.keys(data.vocabulary).forEach(key => {
+        if (saved[key]) overlapCount++;
+      });
+      
+      // Ask if they want to merge or replace
+      let shouldMerge = false;
+      if(Object.keys(saved).length > 0) {
+        const importMsg = `You have ${Object.keys(saved).length} saved words.\n\n` +
+          `Importing ${Object.keys(data.vocabulary).length} words${overlapCount > 0 ? ` (overlapping ${overlapCount})` : ''}.\n\n` +
+          `OK = ADD/MERGE (keeps yours, adds new${overlapCount > 0 ? ', overwrites overlaps' : ''}).\n` +
+          `Cancel = REPLACE (wipes yours).`;
+        shouldMerge = confirm(importMsg);
+      }
+      
+      if(shouldMerge) {
+        // Merge: add imported words to existing
+        Object.assign(saved, data.vocabulary);
+        Object.assign(sentences, data.sentences || {});
+      } else {
+        // Replace: overwrite with imported
+        saved = data.vocabulary;
+        sentences = data.sentences || {};
+      }
+      
+      localStorage.setItem('koenJournal', JSON.stringify(saved));
+      localStorage.setItem('koenSentences', JSON.stringify(sentences));
+      
+      updateRandomButtonState(); // Update button state after importing
+      
+      document.getElementById('savedNotice').textContent = 
+        `Imported successfully! You now have ${Object.keys(saved).length} words.`;
+      
+      alert(`Success! Imported ${Object.keys(data.vocabulary).length} words.`);
+      
+    } catch(err) {
+      alert("Error reading file. Make sure it's a valid vocabulary export.");
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  
+  // Reset file input so same file can be imported again
+  event.target.value = '';
+}
+</script>
+</body>
+</html>
