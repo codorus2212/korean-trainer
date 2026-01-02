@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Bilingual Trainer – Natural Korean Edition</title>
+<title>Korean ↔ English Trainer v2.2.0 – Romanization + Essential Vocabulary</title>
 <style>
   body{font-family:Arial,sans-serif;text-align:center;margin:25px;font-size:19.2px;}
   input{margin:4px;padding:6px;font-size:16.8px;}
@@ -80,7 +80,7 @@
 </style>
 </head>
 <body>
-<h2 style="font-size:28.8px;">Korean ↔ English Trainer – Everyday Polite</h2>
+<h2 style="font-size:28.8px;">Korean ↔ English Trainer v2.2.0</h2>
 
 <div id="inputSection">
   <p>Type up to 3 new word pairs, or use Random Review to practice saved words.</p>
@@ -204,89 +204,128 @@ const verbSentences = {
 };
 
 // Word-by-word translation dictionary for hover tooltips
+// BIDIRECTIONAL DICTIONARY - Works both ways:
+//   - Korean words → English translations (for English learners)
+//   - English words → Korean translations (for Korean learners)
+// v2.0: Enhanced with case-insensitive English lookups for true bidirectionality
 // COMPREHENSIVE - Every word in all 18 sentences covered
 const wordDict = {
   // ===== KOREAN TO ENGLISH =====
   
-  // Core vocabulary - EVERY noun and standalone word
-  "지금": "now / right now",
-  "오늘": "today",
-  "물": "water",
-  "여기": "here",
-  "그거": "that (thing)",
-  "이거": "this (thing)",
-  "이": "this (determiner)",
-  "편지": "letter",
-  "같이": "together",
-  "어디": "where",
-  "몇": "what / how many",
-  "시에": "at (time) o'clock",
-  "한국어": "Korean language",
-  "달리기": "running / to run (noun form)",
-  "좀": "a little / some / please",
-  "수": "ability / possibility (can)",
+  // === QUESTION WORDS (의문사) - Essential for beginners! ===
+  "누구": "who (nugu)",
+  "무엇": "what (mueot)",
+  "뭐": "what [casual] (mwo)",
+  "언제": "when (eonje)",
+  "어디": "where (eodi)",
+  "왜": "why (wae)",
+  "어떻게": "how (eotteoke)",
+  "몇": "how many / what (myeot)",
   
-  // Base verb forms (dictionary form) - for when users enter custom words
-  "먹다": "to eat (dictionary form)",
-  "마시다": "to drink (dictionary form)",
-  "가다": "to go (dictionary form)",
-  "오다": "to come (dictionary form)",
-  "보다": "to see / to watch (dictionary form)",
-  "읽다": "to read (dictionary form)",
-  "쓰다": "to write (dictionary form)",
-  "놀다": "to play (dictionary form)",
-  "공부하다": "to study (dictionary form)",
-  "일하다": "to work (dictionary form)",
-  "자다": "to sleep (dictionary form)",
-  "일어나다": "to wake up (dictionary form)",
-  "앉다": "to sit (dictionary form)",
-  "서다": "to stand (dictionary form)",
-  "말하다": "to talk / to speak (dictionary form)",
-  "듣다": "to listen (dictionary form)",
-  "걷다": "to walk (dictionary form)",
-  "달리다": "to run (dictionary form)",
+  // === TIME WORDS ===
+  "지금": "now / right now (jigeum)",
+  "오늘": "today (oneul)",
+  "내일": "tomorrow (naeil)",
+  "어제": "yesterday (eoje)",
+  "시에": "at (time) o'clock (si-e)",
   
-  // Words from generic sentence patterns
-  "만들어요": "make + 요 (polite)",
-  "필요해요": "need + 요 (polite)",
-  "찾을": "find + 을 (can/future)",
-  "수업에서": "in class (수업 = class, 에서 = in/at)",
-  "사용해요": "use + 요 (polite)",
+  // === LOCATION WORDS ===
+  "여기": "here (yeogi)",
+  "거기": "there (geogi)",
+  "저기": "over there (jeogi)",
+  "집": "house / home (jip)",
   
-  // Verb stems + grammar particles - KEY FOR UNDERSTANDING KOREAN!
+  // === COMMON NOUNS ===
+  "물": "water (mul)",
+  "커피": "coffee (keopi)",
+  "차": "tea (cha)",
+  "밥": "rice / meal (bap)",
+  "책": "book (chaek)",
+  "친구": "friend (chingu)",
+  "사람": "person (saram)",
+  "이름": "name (ireum)",
+  "편지": "letter (pyeonji)",
+  "한국어": "Korean language (hangugeo)",
+  "달리기": "running / to run [noun form] (dalligi)",
+  "수업에서": "in class (sueop-eseo)",
+  
+  // === PRONOUNS & DEMONSTRATIVES ===
+  "이거": "this (thing) (igeo)",
+  "그거": "that (thing) (geugeo)",
+  "저거": "that (thing) over there (jeogeo)",
+  "이": "this [determiner] (i)",
+  
+  // === COMMON ADJECTIVES ===
+  "좋다": "good (jota)",
+  "나쁘다": "bad (nappeuda)",
+  "크다": "big (keuda)",
+  "작다": "small (jakda)",
+  "빠르다": "fast (ppareuda)",
+  "느리다": "slow (neurida)",
+  
+  // === COMMON ADVERBS ===
+  "같이": "together (gachi)",
+  "좀": "a little / some / please (jom)",
+  "수": "ability / possibility (can) (su)",
+  
+  // === BASE VERB FORMS (Dictionary form) - for when users enter custom words ===
+  "먹다": "to eat [dictionary form] (meokda)",
+  "마시다": "to drink [dictionary form] (masida)",
+  "가다": "to go [dictionary form] (gada)",
+  "오다": "to come [dictionary form] (oda)",
+  "보다": "to see / to watch [dictionary form] (boda)",
+  "읽다": "to read [dictionary form] (ikda)",
+  "쓰다": "to write [dictionary form] (sseuda)",
+  "놀다": "to play [dictionary form] (nolda)",
+  "공부하다": "to study [dictionary form] (gongbuhada)",
+  "일하다": "to work [dictionary form] (ilhada)",
+  "자다": "to sleep [dictionary form] (jada)",
+  "일어나다": "to wake up [dictionary form] (ireonada)",
+  "앉다": "to sit [dictionary form] (anta)",
+  "서다": "to stand [dictionary form] (seoda)",
+  "말하다": "to talk / to speak [dictionary form] (malhada)",
+  "듣다": "to listen [dictionary form] (deudda)",
+  "걷다": "to walk [dictionary form] (geotda)",
+  "달리다": "to run [dictionary form] (dallida)",
+  
+  // === WORDS FROM GENERIC SENTENCE PATTERNS ===
+  "만들어요": "make + 요 [polite] (mandeureoyo)",
+  "필요해요": "need + 요 [polite] (piryohaeyo)",
+  "찾을": "find + 을 [can/future] (chajeul)",
+  "사용해요": "use + 요 [polite] (sayonghaeyo)",
+  
+  // === VERB STEMS + GRAMMAR PARTICLES - Key for understanding Korean! ===
   // Every conjugated verb form that appears in our sentences
-  "먹고": "eat + 고 (and/then)",
-  "마셔요": "drink + 요 (polite)",
-  "가고": "go + 고 (and/then)",
-  "오세요": "come + 세요 (polite command)",
-  "보고": "see + 고 (and/then)",
-  "읽을": "read + 을 (future/ability form)",
-  "써야": "write + 야 (must)",
-  "놀아요": "play + 요 (polite)",
-  "공부해야": "study + 해야 (must do)",
-  "일해요": "work + 요 (polite)",
-  "자고": "sleep + 고 (and/then)",
-  "일어나요": "wake up + 요 (polite)",
-  "앉으세요": "sit + 으세요 (polite command)",
-  "서세요": "stand + 세요 (polite command)",
-  "할": "do/speak + ㄹ (can form)",
-  "듣고": "listen + 고 (and/then)",
-  "걸어요": "walk + 요 (polite)",
+  "먹고": "eat + 고 [and/then] (meokgo)",
+  "마셔요": "drink + 요 [polite] (masyeoyo)",
+  "가고": "go + 고 [and/then] (gago)",
+  "오세요": "come + 세요 [polite command] (oseyo)",
+  "보고": "see + 고 [and/then] (bogo)",
+  "읽을": "read + 을 [future/ability] (ilgeul)",
+  "써야": "write + 야 [must] (sseoya)",
+  "놀아요": "play + 요 [polite] (norayo)",
+  "공부해야": "study + 해야 [must do] (gongbuhaeya)",
+  "일해요": "work + 요 [polite] (ilhaeyo)",
+  "자고": "sleep + 고 [and/then] (jago)",
+  "일어나요": "wake up + 요 [polite] (ireonayo)",
+  "앉으세요": "sit + 으세요 [polite command] (anjeuseyo)",
+  "서세요": "stand + 세요 [polite command] (seoseyo)",
+  "할": "do/speak + ㄹ [can form] (hal)",
+  "듣고": "listen + 고 [and/then] (deutgo)",
+  "걸어요": "walk + 요 [polite] (georeoyo)",
   
-  // Grammar endings & particles - THE GLUE OF KOREAN
-  "싶어요": "want to (verb-고 싶어요 = want to verb)",
-  "있어요": "exist / have / can / is/am/are",
-  "해요": "do + 요 (polite ending)",
-  "좋아해요": "like + 요 (polite)",
+  // === GRAMMAR ENDINGS & PARTICLES - The glue of Korean! ===
+  "싶어요": "want to (sipeoyo) [verb-고 싶어요 = want to verb]",
+  "있어요": "exist / have / can / is/am/are (isseoyo)",
+  "해요": "do + 요 [polite ending] (haeyo)",
+  "좋아해요": "like + 요 [polite] (joahaeyo)",
   
   // ===== ENGLISH TO KOREAN =====
   
   // Pronouns & basic words
   "I": "저 (formal) / 나 (casual)",
-  "I'm": "나는 / 저는 (I + topic marker)",
   "Im": "나는 / 저는 (I + topic marker)",
   "We": "우리 (we)",
-  "We're": "우리는 (we + topic marker)",
   "Were": "우리는 (we + topic marker)",
   "you": "너 (casual) / 당신 (formal)",
   "a": "(no article in Korean)",
@@ -365,8 +404,8 @@ const wordDict = {
   
   // Politeness markers & commands
   "Please": "제발 / ~세요 (polite request)",
-  "Let's": "~자 / ~요 (suggestion)",
   "Lets": "~자 / ~요 (suggestion)",
+  "lets": "~자 / ~요 (suggestion)",
   
   // Grammar constructions
   "do": "하다",
@@ -567,22 +606,80 @@ function setSpeechRate(rate) {
 }
 
 // Add hover tooltips to words for vocabulary building
+// v2.0: Enhanced for TRUE bidirectionality with case-insensitive English lookups
 function addTooltips(sentence, isKorean) {
-  // Split on spaces AND punctuation while capturing them as separate tokens
-  const words = sentence.split(/(\s+|[.,!?;:'"()[\]{}])/);
+  // Split on spaces and punctuation, but NOT apostrophes (keep contractions like "Let's" together)
+  const words = sentence.split(/(\s+|[.,!?;:""()[\]{}])/);
   const lang = isKorean ? 'ko-KR' : 'en-US';
   
   return words.map(word => {
-    // Remove ALL punctuation for lookup (more comprehensive)
-    const cleanWord = word.replace(/[.,!?;:'"()[\]{}]/g, '').trim();
+    // Remove punctuation (including apostrophes for contraction matching)
+    // Keep the original word for display, but clean for lookup
+    let cleanWord = word.replace(/[.,!?;:'"''""()[\]{}]/g, '').trim();
     
     // Skip empty words
     if (!cleanWord) return word;
     
-    const translation = wordDict[cleanWord];
+    // Try exact match first (works for Korean and exact English matches)
+    let translation = wordDict[cleanWord];
+    
+    // v2.1.12: If no match and word contains Korean characters, try stripping particles
+    // Korean particles attach to the end of words and prevent dictionary matches
+    if (!translation && isKorean) {
+      // List of common Korean particles to strip (order matters - longer first!)
+      const particles = [
+        '에게서',  // from someone (4 chars)
+        '에서',    // at/from location (2 chars)
+        '에게',    // to someone (2 chars)
+        '으로',    // direction/means (2 chars)
+        '부터',    // from/since (2 chars)
+        '까지',    // until/to (2 chars)
+        '하고',    // and (casual) (2 chars)
+        '조차',    // even (2 chars)
+        '마다',    // each/every (2 chars)
+        '을',      // object marker (1 char)
+        '를',      // object marker (1 char)
+        '이',      // subject marker (1 char)
+        '가',      // subject marker (1 char)
+        '은',      // topic marker (1 char)
+        '는',      // topic marker (1 char)
+        '에',      // location/time marker (1 char)
+        '의',      // possessive (1 char)
+        '도',      // also/too (1 char)
+        '와',      // and/with (1 char)
+        '과',      // and/with (1 char)
+        '로',      // direction/means (1 char)
+        '만'       // only (1 char)
+      ];
+      
+      // Try stripping each particle and looking up the result
+      for (const particle of particles) {
+        if (cleanWord.endsWith(particle)) {
+          const stripped = cleanWord.slice(0, -particle.length);
+          if (stripped) {  // Make sure we didn't strip the entire word
+            translation = wordDict[stripped];
+            if (translation) break;  // Found match with stripped version!
+          }
+        }
+      }
+    }
+    
+    // If no exact match and this appears to be English (ASCII characters),
+    // try case-insensitive lookup for better English tooltip support
+    if (!translation && !isKorean && /^[a-zA-Z]+$/.test(cleanWord)) {
+      // Try lowercase version
+      translation = wordDict[cleanWord.toLowerCase()];
+      
+      // If still no match, try uppercase first letter (for proper nouns)
+      if (!translation) {
+        const capitalized = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
+        translation = wordDict[capitalized];
+      }
+    }
+    
     if (translation) {
-      // Make word clickable to speak it (escape quotes for onclick)
-      const escapedWord = cleanWord.replace(/'/g, "\\'");
+      // Make word clickable to speak it (use original word for better pronunciation)
+      const escapedWord = word.replace(/'/g, "\\'");
       return `<span class="tooltip" data-tooltip="${translation}" onclick="speak('${escapedWord}', '${lang}')">${word}</span>`;
     }
     // If no translation found, return word unchanged (no tooltip)
@@ -670,15 +767,15 @@ function startQuiz() {
       saved[ens[i]] = normalizedKorean;
       
       // Use pre-made sentences if available, otherwise create generic ones
-      if(!sentences[ens[i]]) {
-        if(verbSentences[normalizedKorean]) {
-          sentences[ens[i]] = verbSentences[normalizedKorean];
-        } else {
-          sentences[ens[i]] = {
-            en: `I want to ${ens[i]}.`,
-            ko: `${normalizedKorean}고 싶어요.`
-          };
-        }
+      // v2.1: ALWAYS prefer verbSentences over localStorage to fix corrupted data
+      if(verbSentences[normalizedKorean]) {
+        sentences[ens[i]] = verbSentences[normalizedKorean];
+      } else if(!sentences[ens[i]]) {
+        // Only create generic sentence if no predefined one exists AND no sentence stored
+        sentences[ens[i]] = {
+          en: `I want to ${ens[i]}.`,
+          ko: `${normalizedKorean}고 싶어요.`
+        };
       }
     }
   }
@@ -813,7 +910,7 @@ function showSentences() {
   const cont = document.getElementById("sentences");
   cont.innerHTML = "";
   
-  cont.innerHTML += `<p class="hint">💡 Hover over <span style="border-bottom:1px dotted #0066cc;color:#0066cc;cursor:help;">blue underlined words</span> to see their translation</p>`;
+  cont.innerHTML += `<p class="hint">💡 Hover over <span style="border-bottom:1px dotted #0066cc;color:#0066cc;cursor:help;">blue underlined words</span> to see translations in both languages</p>`;
   
   cont.innerHTML += `<div class="speed-controls">
     <span style="font-weight:bold;margin-right:10px;">🔊 Speech Speed:</span>
